@@ -26,7 +26,7 @@ deploy/             # TypeScript deployment scripts
 
 ## Smart Contracts (Deployed on Avalanche Fuji)
 
-Contracts live in a separate repo (mariaelisaaraya/avalon) and are already deployed:
+Contracts are in `apps/contracts/` and are deployed on Fuji:
 
 | Contract | Proxy Address |
 |----------|--------------|
