@@ -72,6 +72,10 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useCreateStrategy } from "@/lib/hooks/useStrategyActions";
+import { useWallet } from "@/lib/genlayer/WalletProvider";
+import { TOKENS } from "@/lib/contracts/avalanche-config";
+import { toast } from "@/lib/utils/toast";
 
 // ────────────────────────────────────────────────
 // Types
@@ -540,6 +544,45 @@ export default function BuilderPage() {
   const [mobileNodesOpen, setMobileNodesOpen] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const idCounter = useRef(0);
+
+  // Deploy state
+  const { address, isConnected } = useWallet();
+  const { create, isPending: isDeploying } = useCreateStrategy();
+  const [deployAmount, setDeployAmount] = useState("100");
+  const [deployAgentId, setDeployAgentId] = useState("77");
+  const [deployMaxBudget, setDeployMaxBudget] = useState("50");
+  const [deployMaxSlippage, setDeployMaxSlippage] = useState("50");
+  const [deployMaxTrades, setDeployMaxTrades] = useState("10");
+  const [deployToken, setDeployToken] = useState<"USDC" | "WAVAX">("USDC");
+  const [deploySuccess, setDeploySuccess] = useState<string | null>(null);
+
+  const handleDeploy = async () => {
+    if (!isConnected) {
+      toast.error("Connect your wallet first");
+      return;
+    }
+    if (nodes.length === 0) {
+      toast.error("Add at least one node to deploy");
+      return;
+    }
+    try {
+      const tokenAddr = TOKENS.fuji[deployToken];
+      const decimals = deployToken === "USDC" ? 6 : 18;
+      const txHash = await create({
+        depositToken: tokenAddr,
+        amount: deployAmount,
+        agentId: Number(deployAgentId),
+        maxBudget: deployMaxBudget,
+        maxSlippageBps: Number(deployMaxSlippage),
+        maxTradesPerDay: Number(deployMaxTrades),
+        tokenDecimals: decimals,
+      });
+      setDeploySuccess(txHash);
+      toast.success("Strategy deployed on Fuji!");
+    } catch (err: any) {
+      toast.error(err?.message?.slice(0, 80) || "Deploy failed");
+    }
+  };
 
   // Undo/redo history
   const [history, setHistory] = useState<{ nodes: Node[]; edges: Edge[] }[]>([]);
@@ -1210,89 +1253,168 @@ export default function BuilderPage() {
           </DialogHeader>
 
           <div className="mt-2 space-y-4">
-            {/* Name */}
-            <div className="space-y-1.5">
-              <Label className="text-[11px] text-[var(--text-secondary)]">Strategy Name</Label>
-              <Input
-                value={strategyName}
-                onChange={(e) => setStrategyName(e.target.value)}
-                className="h-9 bg-[var(--surface-secondary)] border-[var(--border-light)] text-sm focus-visible:ring-0 focus-visible:border-[var(--border-light)]"
-              />
-            </div>
-
-            {/* Summary */}
-            <div className="p-3 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border-light)] space-y-2.5">
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="text-[var(--text-secondary)]">Nodes</span>
-                <span className="text-[var(--text-primary)] font-medium">{strategySummary.count}</span>
-              </div>
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="text-[var(--text-secondary)]">Pairs</span>
-                <span className="text-[var(--text-primary)] font-medium">
-                  {strategySummary.pairs.length > 0 ? strategySummary.pairs.join(", ") : "—"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-[12px]">
-                <span className="text-[var(--text-secondary)]">Risk Level</span>
-                <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${riskBadgeColor}`}>
-                  {strategySummary.riskLevel}
-                </span>
-              </div>
-              {strategySummary.fee !== null && (
-                <div className="flex items-center justify-between text-[12px]">
-                  <span className="text-[var(--text-secondary)]">Success Fee</span>
-                  <span className="text-[var(--text-primary)] font-medium">{strategySummary.fee}%</span>
-                </div>
-              )}
-            </div>
-
-            {/* JSON toggle */}
-            <div>
-              <button
-                onClick={() => setShowJson(!showJson)}
-                className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-secondary)] transition-colors"
-              >
-                <FileCode className="w-3.5 h-3.5" />
-                {showJson ? "Hide" : "Show"} JSON preview
-                {showJson ? (
-                  <CaretDown className="w-3 h-3" />
-                ) : (
-                  <CaretRight className="w-3 h-3" />
-                )}
-              </button>
-
-              {showJson && (
-                <div className="mt-2 relative">
-                  <pre className="p-3 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border-lighter)] text-[10px] text-[var(--text-secondary)] overflow-auto max-h-48 font-mono leading-relaxed">
-                    {strategyJson}
-                  </pre>
-                  <button
-                    onClick={handleCopy}
-                    className="absolute top-2 right-2 p-1.5 rounded bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            {deploySuccess ? (
+              <div className="space-y-4">
+                <div className="p-4 rounded-lg bg-green-50 border border-green-200 text-center">
+                  <Check className="w-8 h-8 mx-auto text-green-600 mb-2" />
+                  <p className="text-[14px] font-semibold text-green-800">Strategy Deployed!</p>
+                  <a
+                    href={`https://testnet.snowtrace.io/tx/${deploySuccess}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-green-700 hover:underline font-mono mt-1 block"
                   >
-                    {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  </button>
+                    {deploySuccess.slice(0, 20)}...
+                  </a>
                 </div>
-              )}
-            </div>
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 border-[var(--border-light)]"
+                    onClick={() => { setShowDeploy(false); setDeploySuccess(null); }}
+                  >
+                    Close
+                  </Button>
+                  <a href="/dashboard" className="flex-1">
+                    <Button className="w-full h-10 bg-[var(--primary)] hover:bg-[var(--primary-hover)] border-0 font-semibold">
+                      Go to Dashboard
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Name */}
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-[var(--text-secondary)]">Strategy Name</Label>
+                  <Input
+                    value={strategyName}
+                    onChange={(e) => setStrategyName(e.target.value)}
+                    className="h-9 bg-[var(--surface-secondary)] border-[var(--border-light)] text-sm focus-visible:ring-0 focus-visible:border-[var(--border-light)]"
+                  />
+                </div>
 
-            {/* Actions */}
-            <div className="flex gap-3 pt-1">
-              <Button
-                variant="outline"
-                className="flex-1 h-10 border-[var(--border-light)] bg-transparent hover:bg-white/5"
-                onClick={() => setShowDeploy(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                className="flex-1 h-10 bg-[var(--primary)] hover:bg-[var(--primary-hover)] border-0 font-semibold"
-                onClick={() => setShowDeploy(false)}
-              >
-                <Rocket className="w-4 h-4 mr-2" />
-                Deploy to Fuji
-              </Button>
-            </div>
+                {/* Deposit config */}
+                <div className="p-3 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border-light)] space-y-3">
+                  <p className="text-[11px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Deposit & Constraints</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-[var(--text-tertiary)]">Token</Label>
+                      <select
+                        value={deployToken}
+                        onChange={(e) => setDeployToken(e.target.value as "USDC" | "WAVAX")}
+                        className="w-full h-9 px-2 rounded-md text-sm bg-white border border-[var(--border-light)] text-[var(--text-primary)]"
+                      >
+                        <option value="USDC">USDC</option>
+                        <option value="WAVAX">WAVAX</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-[var(--text-tertiary)]">Deposit Amount</Label>
+                      <Input value={deployAmount} onChange={(e) => setDeployAmount(e.target.value)} type="number" className="h-9 bg-white border-[var(--border-light)] text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-[var(--text-tertiary)]">Agent ID (ERC-8004)</Label>
+                      <Input value={deployAgentId} onChange={(e) => setDeployAgentId(e.target.value)} type="number" className="h-9 bg-white border-[var(--border-light)] text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-[var(--text-tertiary)]">Max Budget/Trade</Label>
+                      <Input value={deployMaxBudget} onChange={(e) => setDeployMaxBudget(e.target.value)} type="number" className="h-9 bg-white border-[var(--border-light)] text-sm" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-[var(--text-tertiary)]">Max Slippage (bps)</Label>
+                      <Input value={deployMaxSlippage} onChange={(e) => setDeployMaxSlippage(e.target.value)} type="number" className="h-9 bg-white border-[var(--border-light)] text-sm" placeholder="50 = 0.5%" />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] text-[var(--text-tertiary)]">Max Trades/Day</Label>
+                      <Input value={deployMaxTrades} onChange={(e) => setDeployMaxTrades(e.target.value)} type="number" className="h-9 bg-white border-[var(--border-light)] text-sm" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="p-3 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border-light)] space-y-2.5">
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-[var(--text-secondary)]">Nodes</span>
+                    <span className="text-[var(--text-primary)] font-medium">{strategySummary.count}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-[var(--text-secondary)]">Pairs</span>
+                    <span className="text-[var(--text-primary)] font-medium">
+                      {strategySummary.pairs.length > 0 ? strategySummary.pairs.join(", ") : "—"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-[var(--text-secondary)]">Risk Level</span>
+                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${riskBadgeColor}`}>
+                      {strategySummary.riskLevel}
+                    </span>
+                  </div>
+                  {strategySummary.fee !== null && (
+                    <div className="flex items-center justify-between text-[12px]">
+                      <span className="text-[var(--text-secondary)]">Success Fee</span>
+                      <span className="text-[var(--text-primary)] font-medium">{strategySummary.fee}%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* JSON toggle */}
+                <div>
+                  <button
+                    onClick={() => setShowJson(!showJson)}
+                    className="flex items-center gap-1.5 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-secondary)] transition-colors"
+                  >
+                    <FileCode className="w-3.5 h-3.5" />
+                    {showJson ? "Hide" : "Show"} JSON preview
+                    {showJson ? <CaretDown className="w-3 h-3" /> : <CaretRight className="w-3 h-3" />}
+                  </button>
+
+                  {showJson && (
+                    <div className="mt-2 relative">
+                      <pre className="p-3 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border-lighter)] text-[10px] text-[var(--text-secondary)] overflow-auto max-h-48 font-mono leading-relaxed">
+                        {strategyJson}
+                      </pre>
+                      <button
+                        onClick={handleCopy}
+                        className="absolute top-2 right-2 p-1.5 rounded bg-white/5 hover:bg-white/10 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                      >
+                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-1">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 border-[var(--border-light)] bg-transparent hover:bg-white/5"
+                    onClick={() => setShowDeploy(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 h-10 bg-[var(--primary)] hover:bg-[var(--primary-hover)] border-0 font-semibold"
+                    onClick={handleDeploy}
+                    disabled={isDeploying || !isConnected}
+                  >
+                    {isDeploying ? (
+                      <span className="flex items-center gap-2">
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Deploying...
+                      </span>
+                    ) : !isConnected ? (
+                      "Connect Wallet"
+                    ) : (
+                      <>
+                        <Rocket className="w-4 h-4 mr-2" />
+                        Deploy to Fuji
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
