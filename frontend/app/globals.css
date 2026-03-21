@@ -1,0 +1,246 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+/* DeFAI Light Theme — Inspired by Trader Joe / DeBank */
+:root {
+  --background: #F8F9FB;
+  --foreground: #0F1117;
+
+  --card: #FFFFFF;
+  --card-foreground: #0F1117;
+  --popover: #FFFFFF;
+  --popover-foreground: #0F1117;
+
+  --primary: #8373FF;
+  --primary-hover: #6E5FE8;
+  --primary-light: #EEF0FF;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F1F3F7;
+  --secondary-foreground: #0F1117;
+
+  --muted: #F1F3F7;
+  --muted-foreground: #6B7280;
+
+  --accent: #8373FF;
+  --accent-foreground: #FFFFFF;
+
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E4E7ED;
+  --input: #E4E7ED;
+  --ring: #8373FF;
+
+  --chart-1: #8373FF;
+  --chart-2: #F97316;
+  --chart-3: #3B82F6;
+  --chart-4: #10B981;
+  --chart-5: #E84142;
+
+  --radius: 0.5rem;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #0F1117;
+  --sidebar-primary: #8373FF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F3F7;
+  --sidebar-accent-foreground: #0F1117;
+  --sidebar-border: #E4E7ED;
+  --sidebar-ring: #8373FF;
+
+  /* Semantic tokens for components */
+  --surface: #FFFFFF;
+  --surface-hover: #F1F3F7;
+  --surface-secondary: #F8F9FB;
+  --text-primary: #0F1117;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
+  --border-light: #E4E7ED;
+  --border-lighter: #F1F3F7;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@theme inline {
+  --font-mono: var(--font-mono), 'IBM Plex Mono', ui-monospace, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply text-foreground bg-[var(--background)];
+    font-family: var(--font-sora), 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sora), 'Sora', sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  code, .font-mono {
+    font-family: var(--font-mono), 'IBM Plex Mono', ui-monospace, monospace;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .brand-card {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-card);
+  }
+
+  .brand-card-hover:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-1px);
+  }
+}
+
+html {
+  min-height: 100vh;
+  height: 100%;
+  scroll-behavior: smooth;
+  background-color: var(--background);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Remove dark theme overlay effects */
+main {
+  position: relative;
+}
+
+main > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Wallet modal customization */
+w3m-legal-footer,
+[data-testid="w3m-legal-footer"],
+wcm-legal-footer {
+  display: none !important;
+}
+
+w3m-modal, wcm-modal,
+w3m-router, wcm-router,
+w3m-modal-content, wcm-modal-content {
+  --w3m-border-radius-master: 8px !important;
+}
+
+w3m-modal, wcm-modal {
+  --w3m-background: rgba(255, 255, 255, 0.98) !important;
+  --w3m-color-overlay: rgba(0, 0, 0, 0.3) !important;
+}
+
+w3m-modal *, wcm-modal *,
+w3m-button, wcm-button,
+w3m-wallet-button, wcm-wallet-button,
+w3m-card, wcm-card,
+w3m-input, wcm-input {
+  border-radius: 8px !important;
+}
+
+w3m-wallet-image, wcm-wallet-image,
+w3m-network-image, wcm-network-image {
+  border-radius: 6px !important;
+}
+
+w3m-info-footer, wcm-info-footer,
+[data-testid="w3m-info-footer"],
+[data-testid="wcm-info-footer"] {
+  display: none !important;
+}
+
+w3m-button[data-variant="send"], wcm-button[data-variant="send"],
+w3m-send-button, wcm-send-button,
+[data-testid="w3m-send-button"], [data-testid="wcm-send-button"],
+w3m-swap-button, wcm-swap-button,
+w3m-onramp-button, wcm-onramp-button,
+w3m-wallet-features, wcm-wallet-features,
+w3m-account-token-send-button, wcm-account-token-send-button,
+w3m-wallet-send-button, wcm-wallet-send-button,
+wui-list-item[data-variant="send"], wui-list-item[data-type="send"],
+wui-list-button[data-variant="send"],
+wui-action-list-item[data-variant="send"],
+wui-list-item:has(wui-icon[name="send"]),
+wui-list-item:has(wui-icon[name="swap"]),
+wui-list-item:has(wui-icon[name="onramp"]),
+wui-list-item[icon="send"], wui-list-item[icon="swap"], wui-list-item[icon="onramp"],
+wui-list-item[data-icon="send"], wui-list-item[data-icon="swap"], wui-list-item[data-icon="onramp"] {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
