@@ -8,7 +8,7 @@ import { Diamond, List, X } from "@phosphor-icons/react";
 import { useChainlinkPrice } from "@/lib/hooks/useChainlinkPrice";
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
+  { href: "/marketplace", label: "Home" },
   { href: "/marketplace", label: "Marketplace" },
   { href: "/builder", label: "Builder" },
   { href: "/dashboard", label: "Dashboard" },
