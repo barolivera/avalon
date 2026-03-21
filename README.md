@@ -209,10 +209,6 @@ USER
 - **UUPS Upgradeable**: contracts can be upgraded by admin (multisig recommended)
 - **Rate limited**: daily trade counter resets every 24h, prevents runaway agents
 
-## Contracts Source
-
-Smart contracts live in a separate repo: [mariaelisaaraya/avalon](https://github.com/mariaelisaaraya/avalon)
-
 ## Team
 
 BuenDia Builders — Aleph Hackathon 2026
