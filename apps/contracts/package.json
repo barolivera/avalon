@@ -1,0 +1,24 @@
+{
+  "name": "@avalon/contracts",
+  "version": "0.1.0",
+  "description": "Avalon DeFAI smart contracts on Avalanche",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:fuji": "hardhat run scripts/deploy.js --network fuji",
+    "deploy:local": "hardhat run scripts/deploy.js --network hardhat"
+  },
+  "keywords": [
+    "avalanche",
+    "defi",
+    "ai-agent"
+  ],
+  "author": "BuenDia-Builders",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.2",
+    "@openzeppelin/contracts": "^5.6.1",
+    "hardhat": "^2.28.6"
+  }
+}

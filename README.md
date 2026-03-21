@@ -16,28 +16,28 @@ Built for [Aleph Hackathon 2026](https://dorahacks.io) — Buenos Aires, March 2
 | Icons | Phosphor Icons |
 | Fonts | Sora + IBM Plex Mono |
 | Blockchain | Avalanche C-Chain (Fuji testnet) |
+| Smart Contracts | Solidity 0.8.24, Hardhat, OpenZeppelin 5.x, UUPS Proxy |
 | DEX | Trader Joe Liquidity Book (SDK v2) |
 | Oracles | Chainlink price feeds (AVAX/USD, ETH/USD, BTC/USD) |
 | Agent Identity | ERC-8004 Identity + Reputation Registries |
-| Payments | x402 protocol (success fee) |
+| Payments | x402 protocol (success fee via USDC) |
 | AI Engine | GenLayer |
 
 ## Pages
 
-- `/` — Landing page
 - `/marketplace` — Browse agents with on-chain reputation
 - `/agents/[tokenId]` — Agent profile with performance chart, trade history, hire CTA
 - `/builder` — Visual strategy builder (drag & drop with React Flow)
-- `/dashboard` — Portfolio, positions, fee history, audit log
+- `/dashboard` — Portfolio with real on-chain data, strategy controls, fee history, audit log
 
 ## Getting Started
 
 ```bash
-# Install dependencies
-npm install
+# Install frontend dependencies
+cd frontend && npm install
 
-# Copy env and fill in values
-cp frontend/.env.example frontend/.env
+# Copy env and configure
+cp .env.example .env.local
 
 # Run dev server
 npm run dev
@@ -48,21 +48,56 @@ Open http://localhost:3000.
 ## Environment Variables
 
 ```
-NEXT_PUBLIC_WC_PROJECT_ID=        # WalletConnect (cloud.walletconnect.com)
-NEXT_PUBLIC_CONTRACT_ADDRESS=     # Deployed contract address
-NEXT_PUBLIC_GENLAYER_RPC_URL=     # GenLayer RPC
+NEXT_PUBLIC_NETWORK=fuji                # Network: "fuji" or "mainnet"
+NEXT_PUBLIC_WC_PROJECT_ID=              # WalletConnect (cloud.walletconnect.com)
 ```
 
-## Key Contracts (Fuji)
+Contract addresses are hardcoded in `frontend/lib/contracts/avalanche-config.ts`.
+
+## Deployed Contracts (Avalanche Fuji)
+
+### Avalon Contracts (UUPS Proxies)
+
+| Contract | Proxy Address |
+|----------|--------------|
+| **StrategyVault** | `0x5C126932a5394Ca843608d38FfeB8A2AF9DBbBF3` |
+| **StrategyExecutor** | `0x84a2408A7d7966A55ae6D28dc956AA52a6c28D6C` |
+| **FeeCollector** | `0x04DAF41Fe41E2c25De5Dc9901024c89Fe9773053` |
+
+**Owner/Admin:** `0xfE0C41602CAcb28217e1eAfa4C987C78Db78AAFD`
+
+### External Contracts (Avalanche Fuji)
 
 | Contract | Address |
 |----------|---------|
 | ERC-8004 Identity Registry | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
-| ERC-8004 Reputation Registry | `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63` |
+| ERC-8004 Reputation Registry | `0x8004B663056A597Dffe9eCcC1965A193B7388713` |
 | Chainlink AVAX/USD | `0x5498BB86BC934c8D34FDA08E81D444153d0D06aD` |
+| Chainlink ETH/USD | `0x86d67c3D38D2bCeE722E601025C25a575021c6EA` |
+| Chainlink BTC/USD | `0x31CF013A08c6Ac228C94551d535d5BAfE19c602a` |
 | Trader Joe LB Router | `0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30` |
 | USDC | `0x5425890298aed601595a70AB815c96711a31Bc65` |
 | WAVAX | `0xd00ae08403B9bbb9124bB305C09058E32C39A48c` |
+
+### Contract Wiring
+
+```
+StrategyVault
+  ├─ EXECUTOR_ROLE → StrategyExecutor
+  ├─ feeCollector  → FeeCollector
+  └─ ERC-8004 Identity + Reputation Registries
+
+StrategyExecutor
+  ├─ vault  → StrategyVault
+  ├─ router → Trader Joe LB Router
+  ├─ ERC-8004 Identity Registry (agent verification)
+  └─ Allowed pair: WAVAX/USDC ✓
+
+FeeCollector
+  ├─ VAULT_ROLE → StrategyVault
+  ├─ feeBps = 1000 (10% of profit only)
+  └─ treasury → 0xfE0C...AAFD
+```
 
 ## Architecture
 
@@ -75,10 +110,10 @@ USER
 ┌──────────────────────────────────────────────────────────┐
 │  FRONTEND  (Next.js 16 / React 19)                       │
 │                                                          │
-│  Landing ─ Marketplace ─ Builder ─ Dashboard ─ Agent     │
-│                │              │          │               │
-│          Browse agents   Drag & drop   Track PnL        │
-│          + hire          strategy       + audit log      │
+│  Marketplace ─ Builder ─ Dashboard ─ Agent Detail        │
+│       │           │          │                           │
+│  Browse agents  Drag &    Track PnL + controls           │
+│  + hire         drop      (activate/pause/withdraw)      │
 └──────┬───────────────────────┬───────────────────────────┘
        │                       │
        ▼                       ▼
@@ -100,20 +135,22 @@ USER
        ┌───────────────────────┼───────────────────────┐
        ▼                       ▼                       ▼
 ┌──────────────┐    ┌─────────────────┐    ┌───────────────┐
-│ StrategyVault│    │  Trader Joe LB  │    │ FeeCollector  │
-│ (Solidity)   │    │  (DEX)          │    │ (Solidity)    │
+│StrategyVault │    │StrategyExecutor │    │ FeeCollector  │
 │              │    │                 │    │               │
-│ deposit()    │    │ Swap via        │    │ collectFee()  │
-│ withdraw()   │    │ Liquidity Book  │    │ x402 protocol │
-│ emergencyStop│    │ Zero-slippage   │    │ Only on profit│
-│ balances[]   │    │ bins            │    │ USDC transfer │
+│createStrategy│    │ executeSwap()   │    │ collectFee()  │
+│activateStrat.│    │ via Trader Joe  │    │ x402 protocol │
+│pauseStrategy │    │ Liquidity Book  │    │ Only on profit│
+│emergencyWith.│    │ + Chainlink     │    │ 10% of profit │
+│settleStrategy│    │   price checks  │    │ USDC transfer │
+│getUserStrat. │    │ decisionHash    │    │               │
+│              │    │ logged on-chain │    │ settleX402Fee │
 └──────────────┘    └─────────────────┘    └───────────────┘
        │                       │                       │
        └───────────────────────┼───────────────────────┘
                                ▼
                     ┌─────────────────┐
                     │  AVALANCHE      │
-                    │  C-Chain        │
+                    │  C-Chain (Fuji) │
                     │                 │
                     │  ~2s finality   │
                     │  Low gas        │
@@ -127,44 +164,54 @@ USER
 |-------|-------|-------------|
 | **Frontend** | Browser | Visual strategy builder, agent marketplace, portfolio dashboard |
 | **AI Engine** | Off-chain (GenLayer) | Reads market data, evaluates strategies, decides trades |
-| **Smart Contracts** | On-chain (Avalanche) | Holds funds, executes swaps, collects fees, logs decisions |
+| **StrategyVault** | On-chain (Avalanche) | Non-custodial fund custody, strategy lifecycle, emergency withdraw |
+| **StrategyExecutor** | On-chain (Avalanche) | Trade execution via Trader Joe LB, on-chain constraints, decision logging |
+| **FeeCollector** | On-chain (Avalanche) | Success fee (10% of profit only), x402 settlement, USDC |
 | **Oracles** | On-chain (Chainlink) | Real-time price feeds for AVAX, ETH, BTC |
 | **DEX** | On-chain (Trader Joe) | Trade execution via Liquidity Book |
 | **Identity** | On-chain (ERC-8004) | Agent NFT identity + immutable reputation scores |
-| **Payments** | On-chain (x402) | Success fees settled in USDC only when user profits |
 
-### Strategy flow: Builder to execution
+### Strategy lifecycle
 
 ```
 1. BUILD     User drags nodes in /builder (Chainlink → RSI → Swap → TP/SL)
                  │
 2. DEPLOY    "Deploy Agent" → registers agent on ERC-8004 Identity Registry
-             → mints NFT with strategy metadata URI
-             → user deposits USDC into StrategyVault
+             → user deposits tokens into StrategyVault.createStrategy()
+             → sets constraints: maxBudget, maxSlippage, maxTradesPerDay
                  │
-3. MONITOR   GenLayer AI agent reads Chainlink price feeds every block
+3. ACTIVATE  User calls activateStrategy() → status: Active
+                 │
+4. MONITOR   GenLayer AI agent reads Chainlink price feeds
              → evaluates strategy conditions (RSI thresholds, price levels)
                  │
-4. EXECUTE   Conditions met → agent calls Trader Joe LB Router
-             → swap executed with zero-slippage in active bin
-             → decision hash logged on-chain for auditability
+5. EXECUTE   Conditions met → StrategyExecutor.executeSwap()
+             → Trader Joe LB swap with slippage protection
+             → decision hash + confidence score logged on-chain
                  │
-5. SETTLE    Profitable cycle → FeeCollector.collectFee()
-             → x402 protocol: fee = profit × agent.feePercent
-             → USDC transferred from vault to treasury
-             → FeeCollected event indexed by dashboard
+6. SETTLE    Strategy complete → settleStrategy()
+             → profit calculated on-chain
+             → FeeCollector.collectFee() takes 10% of profit only
+             → user withdraws remaining balance
                  │
-6. REPEAT    Agent continues until user pauses or hits stop-loss
-             → emergencyStop() available anytime
+7. CONTROL   User can at any time:
+             → pauseStrategy() / resumeStrategy()
+             → emergencyWithdraw() (instant, any status, no delay)
 ```
 
 ### Key security properties
 
-- **User keeps keys**: funds are in StrategyVault, only user can withdraw
-- **Agent is constrained**: can only trade within user-defined limits (stop-loss, max allocation)
-- **Emergency stop**: owner can pause the vault instantly, freezing all operations
-- **Transparent**: every agent decision is hashed and logged on-chain
-- **Aligned incentives**: agent earns 0% if user earns 0% (x402 variable pricing)
+- **Non-custodial**: funds are in StrategyVault, only user can withdraw
+- **Agent is constrained**: maxBudget, maxSlippage, maxTradesPerDay enforced on-chain
+- **Emergency withdraw**: available in ANY status, no delay, no approval needed
+- **Transparent**: every agent decision hash + confidence score logged on-chain
+- **Aligned incentives**: agent earns 0% if user earns 0% (x402 success fee)
+- **UUPS Upgradeable**: contracts can be upgraded by admin (multisig recommended)
+- **Rate limited**: daily trade counter resets every 24h, prevents runaway agents
+
+## Contracts Source
+
+Smart contracts live in a separate repo: [mariaelisaaraya/avalon](https://github.com/mariaelisaaraya/avalon)
 
 ## Team
 
