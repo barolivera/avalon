@@ -293,9 +293,14 @@ export default function HomePage() {
             </nav>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-[var(--border-light)] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[var(--text-tertiary)]">
+          <div className="mt-8 pt-6 border-t border-[var(--border-light)] flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-[var(--text-tertiary)]">
             <span>Built for Aleph Hackathon 2026 · Avalanche + GenLayer</span>
-            <span>&copy; 2026 Avalon</span>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-semibold rounded border border-orange-200 bg-orange-50 text-orange-700">
+                x402 Powered
+              </span>
+              <span>&copy; 2026 Avalon</span>
+            </div>
           </div>
         </div>
       </footer>

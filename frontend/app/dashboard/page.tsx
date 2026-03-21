@@ -376,6 +376,13 @@ function OpenPositionsTab() {
 function FeeHistoryTab() {
   return (
     <div className="rounded-xl border border-[var(--border-light)] overflow-hidden">
+      <div className="px-4 py-3 border-b border-[var(--border-light)] flex items-center justify-between bg-[var(--surface)]">
+        <span className="text-[12px] font-medium text-[var(--text-primary)]">Settlement History</span>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-semibold rounded border border-orange-200 bg-orange-50 text-orange-700">
+          <Receipt className="w-3 h-3" />
+          x402 Powered
+        </span>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead>

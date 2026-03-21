@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useMockAgents } from "@/lib/hooks/useAgents";
 import { useChainlinkPrice } from "@/lib/hooks/useChainlinkPrice";
+import { useX402, type X402Step } from "@/lib/hooks/useX402";
 import {
   CaretRight,
   Trophy,
@@ -43,6 +44,9 @@ import {
   ArrowSquareOut,
   Hourglass,
   ArrowRight,
+  CircleNotch,
+  CurrencyDollar,
+  Receipt,
 } from "@phosphor-icons/react";
 
 // ── Types ──
@@ -137,6 +141,33 @@ function AgentAvatar({ hue, name, size = 64 }: { hue: number; name: string; size
   );
 }
 
+// ── x402 step indicator ──
+
+const STEP_ORDER: X402Step[] = ["checking", "fee-required", "settling", "settled"];
+
+function X402StepIndicator({ label, step, current }: { label: string; step: X402Step; current: X402Step }) {
+  const stepIdx = STEP_ORDER.indexOf(step);
+  const currentIdx = STEP_ORDER.indexOf(current);
+  const isActive = step === current;
+  const isDone = currentIdx > stepIdx;
+  const isPending = currentIdx < stepIdx;
+
+  return (
+    <div className={`flex items-center gap-2.5 text-[12px] transition-opacity duration-300 ${isPending ? "opacity-30" : "opacity-100"}`}>
+      {isDone ? (
+        <CheckCircle className="w-4 h-4 text-green-600 shrink-0" weight="fill" />
+      ) : isActive ? (
+        <CircleNotch className="w-4 h-4 text-[var(--primary)] shrink-0 animate-spin" />
+      ) : (
+        <div className="w-4 h-4 rounded-full border border-[var(--border-light)] shrink-0" />
+      )}
+      <span className={isDone ? "text-green-700" : isActive ? "text-[var(--text-primary)] font-medium" : "text-[var(--text-tertiary)]"}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
 // ── Page ──
 
 export default function AgentProfilePage() {
@@ -155,7 +186,7 @@ export default function AgentProfilePage() {
   const [stopLoss, setStopLoss] = useState("10");
   const [maxAlloc, setMaxAlloc] = useState("5000");
   const [agreed, setAgreed] = useState(false);
-  const [hired, setHired] = useState(false);
+  const { step: x402Step, result: x402Result, settleAgentFee, reset: resetX402 } = useX402();
 
   if (!agent) {
     if (typeof window !== "undefined") router.replace("/marketplace");
@@ -165,12 +196,20 @@ export default function AgentProfilePage() {
   const pnlPositive = agent.pnl >= 0;
   const tokenIdDisplay = `#${tokenId.replace("agent-", "").padStart(4, "0")}`;
 
-  const handleHire = () => {
-    setHired(true);
-    setTimeout(() => {
-      setShowHireModal(false);
-      setHired(false);
-    }, 2000);
+  const handleHire = async () => {
+    // Simulate a profit amount for the demo (random $50-$500)
+    const mockProfit = Math.round((50 + Math.random() * 450) * 100) / 100;
+    try {
+      await settleAgentFee(agent.id, mockProfit, agent.successFee, "0x7a3B...f29E");
+    } catch {
+      // error state handled by the hook
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowHireModal(false);
+    resetX402();
+    setAgreed(false);
   };
 
   return (
@@ -395,7 +434,13 @@ export default function AgentProfilePage() {
 
               {/* Fee Structure */}
               <div className="p-5 rounded-xl border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)]">
-                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] mb-3">Fee Structure</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">Fee Structure</h3>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-semibold rounded border border-orange-200 bg-orange-50 text-orange-700">
+                    <Receipt className="w-3 h-3" />
+                    x402 Powered
+                  </span>
+                </div>
                 <div className="text-center mb-3">
                   <span className="text-3xl font-bold font-mono text-[var(--primary)]">{agent.successFee}%</span>
                   <p className="text-[11px] text-[var(--text-secondary)] mt-1">Only charged when you profit</p>
@@ -404,6 +449,10 @@ export default function AgentProfilePage() {
                   <div className="flex items-center justify-between py-1.5 border-b border-[var(--border-lighter)]">
                     <span className="text-[var(--text-secondary)]">Performance Fee</span>
                     <span className="font-mono text-[var(--text-primary)]">{agent.successFee}% of profit</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-[var(--border-lighter)]">
+                    <span className="text-[var(--text-secondary)]">Settlement</span>
+                    <span className="font-mono text-[var(--text-primary)]">USDC via x402</span>
                   </div>
                   <div className="flex items-center justify-between py-1.5">
                     <span className="text-[var(--text-secondary)]">Est. Gas per Trade</span>
@@ -467,17 +516,22 @@ export default function AgentProfilePage() {
         </div>
       </main>
 
-      {/* Hire Modal */}
-      <Dialog open={showHireModal} onOpenChange={setShowHireModal}>
+      {/* Hire Modal with x402 Flow */}
+      <Dialog open={showHireModal} onOpenChange={handleCloseModal}>
         <DialogContent className="max-w-md brand-card">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Confirm Hire</DialogTitle>
+            <DialogTitle className="text-xl font-bold">
+              {x402Step === "idle" ? "Confirm Hire" : "x402 Settlement"}
+            </DialogTitle>
             <DialogDescription className="text-[var(--text-secondary)]">
-              Review before deploying this agent with your capital.
+              {x402Step === "idle"
+                ? "Review before deploying this agent with your capital."
+                : "Processing fee via x402 protocol on Avalanche"}
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-3 space-y-4">
+            {/* Summary (always visible) */}
             <div className="p-3 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border-light)] space-y-2 text-[12px]">
               <div className="flex justify-between">
                 <span className="text-[var(--text-secondary)]">Agent</span>
@@ -492,46 +546,94 @@ export default function AgentProfilePage() {
                 <span className="font-mono text-[var(--text-primary)]">{agent.successFee}% of profit</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[var(--text-secondary)]">Stop Loss</span>
-                <span className="font-mono text-[var(--text-primary)]">{stopLoss}%</span>
+                <span className="text-[var(--text-secondary)]">Protocol</span>
+                <span className="inline-flex items-center gap-1 font-mono text-orange-700">
+                  <Receipt className="w-3 h-3" /> x402
+                </span>
               </div>
             </div>
 
-            <label className="flex items-start gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agreed}
-                onChange={(e) => setAgreed(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-[var(--border-light)] accent-[var(--primary)]"
-              />
-              <span className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                I understand this agent trades autonomously on my behalf and that past performance does not guarantee future results.
-              </span>
-            </label>
+            {/* x402 Flow Steps */}
+            {x402Step !== "idle" && (
+              <div className="p-3 rounded-lg border border-[var(--border-light)] space-y-2.5">
+                <X402StepIndicator label="Checking profit..." step="checking" current={x402Step} />
+                <X402StepIndicator label={x402Result?.feeAmount ? `Fee calculated: $${x402Result.feeAmount.toFixed(2)} USDC` : "Fee required — awaiting authorization"} step="fee-required" current={x402Step} />
+                <X402StepIndicator label="Settling payment on-chain..." step="settling" current={x402Step} />
+                <X402StepIndicator label={x402Result?.txHash ? "Payment processed" : "Complete"} step="settled" current={x402Step} />
+              </div>
+            )}
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => setShowHireModal(false)}
-              >
-                Cancel
+            {/* No fee result */}
+            {x402Step === "no-fee" && (
+              <div className="flex items-center gap-2 text-[12px] text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2.5">
+                <CheckCircle className="w-4 h-4 shrink-0" weight="fill" />
+                No profit generated — zero fee charged per x402 variable pricing
+              </div>
+            )}
+
+            {/* Success result with tx link */}
+            {x402Step === "settled" && x402Result?.txHash && (
+              <div className="p-3 rounded-lg bg-green-50 border border-green-200 space-y-2">
+                <div className="flex items-center gap-2 text-[12px] text-green-700 font-medium">
+                  <CheckCircle className="w-4 h-4 shrink-0" weight="fill" />
+                  Fee settled: ${x402Result.feeAmount.toFixed(2)} USDC
+                </div>
+                <a
+                  href={x402Result.explorer}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-mono text-[var(--text-tertiary)] hover:text-[var(--primary)] transition-colors"
+                >
+                  {x402Result.txHash.slice(0, 18)}...
+                  <ArrowSquareOut className="w-3 h-3" />
+                </a>
+              </div>
+            )}
+
+            {/* Error */}
+            {x402Step === "error" && (
+              <div className="flex items-center gap-2 text-[12px] text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+                <Warning className="w-4 h-4 shrink-0" />
+                Settlement failed: {x402Result?.reason || "Unknown error"}
+              </div>
+            )}
+
+            {/* Consent + Actions (only shown before starting) */}
+            {x402Step === "idle" && (
+              <>
+                <label className="flex items-start gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={(e) => setAgreed(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-[var(--border-light)] accent-[var(--primary)]"
+                  />
+                  <span className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                    I understand this agent trades autonomously and fees are settled via x402 protocol in USDC on Avalanche.
+                  </span>
+                </label>
+
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={handleCloseModal}>
+                    Cancel
+                  </Button>
+                  <Button
+                    className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white border-0 font-semibold"
+                    disabled={!agreed}
+                    onClick={handleHire}
+                  >
+                    Confirm & Deploy
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {/* Close button after completion */}
+            {(x402Step === "settled" || x402Step === "no-fee" || x402Step === "error") && (
+              <Button variant="outline" className="w-full" onClick={handleCloseModal}>
+                {x402Step === "error" ? "Close" : "Done"}
               </Button>
-              <Button
-                className="flex-1 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white border-0 font-semibold"
-                disabled={!agreed || hired}
-                onClick={handleHire}
-              >
-                {hired ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-1.5" weight="fill" />
-                    Agent Hired!
-                  </>
-                ) : (
-                  "Confirm & Deploy"
-                )}
-              </Button>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
