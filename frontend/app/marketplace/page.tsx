@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { useAgents, type Agent } from "@/lib/hooks/useAgents";
-import { useChainlinkPrice } from "@/lib/hooks/useChainlinkPrice";
 import {
   Robot,
   ChartLineUp,
@@ -203,7 +202,6 @@ function AgentCard({ agent }: { agent: Agent }) {
 export default function MarketplacePage() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all");
   const { data, isLoading } = useAgents();
-  const { data: avaxPrice } = useChainlinkPrice("AVAX/USD");
   const agents = data?.agents ?? [];
   const source = data?.source ?? "mock";
   const filtered = filterAgents(agents, activeFilter);
@@ -221,11 +219,6 @@ export default function MarketplacePage() {
               {source === "onchain" && (
                 <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-medium rounded border border-green-200 bg-green-50 text-green-700">
                   Live on-chain
-                </span>
-              )}
-              {avaxPrice && (
-                <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-mono font-medium rounded border border-[var(--border-light)] bg-[var(--surface-secondary)] text-[var(--text-secondary)]">
-                  AVAX ${avaxPrice.price.toFixed(2)}
                 </span>
               )}
             </div>

@@ -65,6 +65,13 @@ import {
   GasPump,
   Info,
 } from "@phosphor-icons/react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 // ────────────────────────────────────────────────
 // Types
@@ -530,7 +537,7 @@ export default function BuilderPage() {
   const [copied, setCopied] = useState(false);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [showNodePanel, setShowNodePanel] = useState(false);
+  const [mobileNodesOpen, setMobileNodesOpen] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const idCounter = useRef(0);
 
@@ -773,15 +780,6 @@ export default function BuilderPage() {
       <div className="fixed top-14 left-0 md:left-[280px] right-0 z-40 border-b border-[var(--border-light)] bg-white/95 backdrop-blur-sm">
         <div className="px-4 flex items-center justify-between h-11">
           <div className="flex items-center gap-1">
-            {/* Mobile: toggle node panel */}
-            <button
-              onClick={() => setShowNodePanel(!showNodePanel)}
-              className="md:hidden p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-[var(--surface-hover)] transition-colors"
-              title="Toggle nodes"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-            <span className="md:hidden w-px h-4 bg-[var(--border-light)]" />
             {/* Templates (hidden on mobile) */}
             {PRESETS.map((p) => (
               <button
@@ -849,18 +847,9 @@ export default function BuilderPage() {
 
       {/* Main 3-panel layout */}
       <div className="flex flex-1 pt-[108px]">
-        {/* Mobile overlay */}
-        {showNodePanel && (
-          <div
-            className="fixed inset-0 z-40 bg-black/20 md:hidden"
-            onClick={() => setShowNodePanel(false)}
-          />
-        )}
-        {/* ── LEFT PANEL ── */}
+        {/* ── LEFT PANEL (desktop only) ── */}
         <aside
-          className={`shrink-0 border-r border-[var(--border-light)] overflow-y-auto overflow-x-hidden transition-transform duration-200 ${
-            showNodePanel ? "translate-x-0" : "-translate-x-full"
-          } md:translate-x-0 fixed md:static top-[108px] bottom-0 z-50 md:z-auto`}
+          className="hidden md:block shrink-0 border-r border-[var(--border-light)] overflow-y-auto overflow-x-hidden"
           style={{ width: 280, background: "#FFFFFF" }}
         >
           {/* Search */}
@@ -1142,6 +1131,72 @@ export default function BuilderPage() {
             </div>
           </aside>
         )}
+      </div>
+
+      {/* ── MOBILE: Floating Add Node button + Sheet ── */}
+      <div className="md:hidden fixed bottom-6 right-6 z-50">
+        <Sheet open={mobileNodesOpen} onOpenChange={setMobileNodesOpen}>
+          <SheetTrigger asChild>
+            <button className="flex items-center gap-2 px-4 py-3 rounded-full bg-[var(--primary)] text-white shadow-lg hover:bg-[var(--primary-hover)] transition-colors">
+              <Plus className="w-4 h-4" />
+              <span className="text-sm font-medium">Add Node</span>
+            </button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="max-h-[70vh] rounded-t-2xl">
+            <SheetHeader>
+              <SheetTitle>Strategy Nodes</SheetTitle>
+            </SheetHeader>
+            <div className="overflow-y-auto py-4 space-y-4">
+              {CATEGORIES.map((catKey) => {
+                const templates = templatesByCategory[catKey];
+                if (templates.length === 0) return null;
+                const cat = CATEGORY_META[catKey];
+                return (
+                  <div key={catKey}>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-tertiary)] mb-2 px-1">
+                      {cat.label}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {templates.map((template) => {
+                        const Icon = template.icon;
+                        return (
+                          <button
+                            key={template.type}
+                            onClick={() => {
+                              // Add node to center of canvas
+                              const defaultParams: Record<string, any> = {};
+                              template.params.forEach((p) => (defaultParams[p.key] = p.defaultValue));
+                              const position = reactFlowInstance
+                                ? reactFlowInstance.screenToFlowPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+                                : { x: 200, y: 200 };
+                              setNodes((nds) => [
+                                ...nds,
+                                {
+                                  id: `node_${++idCounter.current}`,
+                                  type: "strategyNode",
+                                  position,
+                                  data: { templateType: template.type, params: defaultParams },
+                                },
+                              ]);
+                              setMobileNodesOpen(false);
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border ${cat.border} ${cat.bg} text-left transition-colors active:scale-95`}
+                          >
+                            <Icon className={`w-4 h-4 ${cat.accent} shrink-0`} />
+                            <div className="min-w-0">
+                              <div className="text-[12px] font-medium text-[var(--text-primary)] truncate">{template.label}</div>
+                              <div className="text-[10px] text-[var(--text-tertiary)] truncate">{template.description}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
       {/* ── DEPLOY MODAL ── */}
