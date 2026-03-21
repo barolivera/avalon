@@ -108,6 +108,43 @@ export const ABIS = {
   ] as const,
 } as const;
 
+// ── Avalon Contract ABIs ──
+
+export const VAULT_ABI = [
+  "function createStrategy(address depositToken, uint256 amount, uint256 agentId, uint256 maxBudget, uint16 maxSlippageBps, uint16 maxTradesPerDay) returns (uint256 strategyId)",
+  "function activateStrategy(uint256 strategyId)",
+  "function pauseStrategy(uint256 strategyId)",
+  "function resumeStrategy(uint256 strategyId)",
+  "function emergencyWithdraw(uint256 strategyId)",
+  "function settleStrategy(uint256 strategyId)",
+  "function withdraw(uint256 strategyId)",
+  "function giveFeedback(uint256 strategyId, int128 rating, string tag)",
+  "function getStrategy(uint256 strategyId) view returns (tuple(address user, address depositToken, uint256 depositAmount, uint256 currentBalance, uint256 maxBudget, uint16 maxSlippageBps, uint16 maxTradesPerDay, uint16 tradesToday, uint40 lastTradeReset, uint40 createdAt, uint256 agentId, uint8 status))",
+  "function getPnL(uint256 strategyId) view returns (int256)",
+  "function getUserStrategies(address user) view returns (uint256[])",
+  "function getUserStrategyViews(address user) view returns (tuple(uint256 strategyId, address user, address depositToken, uint256 depositAmount, uint256 currentBalance, int256 pnl, uint256 agentId, uint8 status, uint40 createdAt)[])",
+  "function getAgentReputation(uint256 agentId) view returns (uint64 feedbackCount, int128 averageRating)",
+  "function nextStrategyId() view returns (uint256)",
+  "function feeCollector() view returns (address)",
+] as const;
+
+export const EXECUTOR_ABI = [
+  "function executeSwap(uint256 strategyId, address tokenIn, address tokenOut, uint256 amountIn, uint256 minAmountOut, tuple(uint256[] pairBinSteps, uint8[] versions, address[] tokenPath) path, bytes32 decisionHash, uint8 confidenceScore) returns (uint256 amountOut)",
+  "function getStrategyTrades(uint256 strategyId) view returns (tuple(uint256 strategyId, address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut, uint40 timestamp, bytes32 decisionHash, uint8 confidenceScore, uint256 agentId)[])",
+  "function getTradeCount(uint256 strategyId) view returns (uint256)",
+  "function totalTrades() view returns (uint256)",
+  "function allowedPairs(address, address) view returns (bool)",
+  "function isRegisteredAgent(address wallet) view returns (bool registered, uint256 agentId)",
+  "function getLatestPrice(address token) view returns (int256 price, uint8 decimals)",
+] as const;
+
+export const FEE_ABI = [
+  "function feeBps() view returns (uint256)",
+  "function previewFee(uint256 depositAmount, uint256 finalBalance) view returns (uint256)",
+  "function totalFeesCollected(address token) view returns (uint256)",
+  "function strategyFeesCollected(uint256 strategyId) view returns (uint256)",
+] as const;
+
 // ── Avalon Contracts (deployed UUPS proxies) ──
 
 export const AVALON_CONTRACTS = {

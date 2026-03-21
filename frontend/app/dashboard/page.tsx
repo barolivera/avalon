@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
+import { useUserStrategies, useVaultStats, type StrategyView } from "@/lib/hooks/useStrategies";
+import { useStrategyAction } from "@/lib/hooks/useStrategyActions";
+import { useWallet } from "@/lib/genlayer/WalletProvider";
+import { getExplorerAddressUrl } from "@/lib/contracts/avalanche-config";
 import {
   LineChart,
   Line,
@@ -226,92 +230,110 @@ function TxLink({ hash }: { hash: string }) {
 // Tab components
 // ────────────────────────────────────────────────
 
-function MyAgentsTab() {
+function MyAgentsTab({ strategies }: { strategies: StrategyView[] }) {
+  const { execute, isPending } = useStrategyAction();
+
+  const strategyStatusConfig: Record<string, { label: string; class: string }> = {
+    Active:    { label: "ACTIVE",    class: "text-green-700 bg-green-50 border-green-200" },
+    Funded:    { label: "FUNDED",    class: "text-blue-700 bg-blue-50 border-blue-200" },
+    Paused:    { label: "PAUSED",    class: "text-yellow-700 bg-yellow-50 border-yellow-200" },
+    Completed: { label: "COMPLETED", class: "text-gray-700 bg-gray-50 border-gray-200" },
+    Cancelled: { label: "CANCELLED", class: "text-red-700 bg-red-50 border-red-200" },
+    Draft:     { label: "DRAFT",     class: "text-gray-500 bg-gray-50 border-gray-200" },
+  };
+
+  if (strategies.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <Robot className="w-12 h-12 mx-auto mb-4 text-[var(--text-tertiary)]" />
+        <h3 className="text-lg font-semibold mb-2">No strategies yet</h3>
+        <p className="text-[13px] text-[var(--text-secondary)] mb-4">Go to the Builder to create your first strategy</p>
+        <a href="/builder">
+          <Button variant="default" size="sm">Create Strategy</Button>
+        </a>
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      {AGENTS.map((agent) => {
-        const pnlPositive = agent.pnl >= 0;
-        const pnl24hPositive = agent.pnl24h >= 0;
-        const sc = statusConfig[agent.status];
+      {strategies.map((s) => {
+        const pnlPositive = Number(s.pnl) >= 0;
+        const sc = strategyStatusConfig[s.status] || strategyStatusConfig.Draft;
+        const hue = (s.agentId * 47) % 360;
         return (
-          <div
-            key={agent.id}
-            className="rounded-xl border border-[var(--border-light)] bg-[var(--surface)] overflow-hidden"
-          >
+          <div key={s.strategyId} className="rounded-xl border border-[var(--border-light)] bg-[var(--surface)] overflow-hidden">
             <div className="p-4 space-y-4">
-              {/* Header */}
               <div className="flex items-start gap-3">
-                <AgentAvatar hue={agent.hue} name={agent.name} />
+                <AgentAvatar hue={hue} name={`Agent #${s.agentId}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-[13px] font-semibold truncate">{agent.name}</h3>
+                    <h3 className="text-[13px] font-semibold truncate">Strategy #{s.strategyId}</h3>
                     <span className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold rounded border ${sc.class}`}>
                       {sc.label}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{agent.strategy}</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Agent #{s.agentId} · {s.tokenSymbol}</p>
                 </div>
               </div>
 
-              {/* Sparkline */}
-              <div className="h-12 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={agent.sparkline}>
-                    <YAxis domain={["dataMin", "dataMax"]} hide />
-                    <Line
-                      type="monotone"
-                      dataKey="v"
-                      stroke={pnl24hPositive ? "#22c55e" : "#ef4444"}
-                      strokeWidth={1.5}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Stats */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[10px] text-[var(--text-tertiary)]">Total PnL</p>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">PnL</p>
                   <span className={`text-sm font-semibold tabular-nums font-mono ${pnlPositive ? "text-green-600" : "text-red-600"}`}>
-                    {pnlPositive ? "+" : ""}{agent.pnl}%
+                    {pnlPositive ? "+" : ""}{s.pnl} {s.tokenSymbol}
                   </span>
                 </div>
                 <div>
-                  <p className="text-[10px] text-[var(--text-tertiary)]">24h</p>
-                  <span className={`text-sm font-semibold tabular-nums font-mono ${pnl24hPositive ? "text-green-600" : "text-red-600"}`}>
-                    {pnl24hPositive ? "+" : ""}{agent.pnl24h}%
+                  <p className="text-[10px] text-[var(--text-tertiary)]">PnL %</p>
+                  <span className={`text-sm font-semibold tabular-nums font-mono ${pnlPositive ? "text-green-600" : "text-red-600"}`}>
+                    {pnlPositive ? "+" : ""}{s.pnlPercent}%
                   </span>
                 </div>
                 <div>
-                  <p className="text-[10px] text-[var(--text-tertiary)]">Win Rate</p>
-                  <span className="text-sm font-semibold tabular-nums font-mono">{agent.winRate}%</span>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Balance</p>
+                  <span className="text-sm font-semibold tabular-nums font-mono">{s.currentBalance}</span>
                 </div>
               </div>
 
               <div className="text-[11px] text-[var(--text-secondary)]">
-                Invested: <span className="text-[var(--text-primary)] font-medium">${agent.invested.toLocaleString()}</span>
+                Deposited: <span className="text-[var(--text-primary)] font-medium">{s.depositAmount} {s.tokenSymbol}</span>
+                <span className="ml-2">·</span>
+                <span className="ml-2">{s.createdAt.toLocaleDateString()}</span>
               </div>
             </div>
 
-            {/* Actions */}
             <div className="px-4 py-3 border-t border-[var(--border-lighter)] flex items-center gap-2">
-              {agent.status === "active" && (
-                <Button variant="ghost" size="sm" className="h-7 text-[11px] text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/5 flex-1">
-                  <Pause className="w-3 h-3 mr-1" />
-                  Pause
+              {s.status === "Funded" && (
+                <Button variant="ghost" size="sm" disabled={isPending} onClick={() => execute("activate", s.strategyId)}
+                  className="h-7 text-[11px] text-green-600/70 hover:text-green-600 hover:bg-green-500/5 flex-1">
+                  <ChartLineUp className="w-3 h-3 mr-1" /> Activate
                 </Button>
               )}
-              {agent.status !== "stopped" && (
-                <Button variant="ghost" size="sm" className="h-7 text-[11px] text-red-600/70 hover:text-red-600 hover:bg-red-500/5 flex-1">
-                  <Stop className="w-3 h-3 mr-1" />
-                  Stop
+              {s.status === "Active" && (
+                <Button variant="ghost" size="sm" disabled={isPending} onClick={() => execute("pause", s.strategyId)}
+                  className="h-7 text-[11px] text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/5 flex-1">
+                  <Pause className="w-3 h-3 mr-1" /> Pause
                 </Button>
               )}
-              <Button variant="ghost" size="sm" className="h-7 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] flex-1">
-                <Eye className="w-3 h-3 mr-1" />
-                Details
-              </Button>
+              {s.status === "Paused" && (
+                <Button variant="ghost" size="sm" disabled={isPending} onClick={() => execute("resume", s.strategyId)}
+                  className="h-7 text-[11px] text-green-600/70 hover:text-green-600 hover:bg-green-500/5 flex-1">
+                  <ChartLineUp className="w-3 h-3 mr-1" /> Resume
+                </Button>
+              )}
+              {(s.status === "Active" || s.status === "Paused" || s.status === "Funded") && (
+                <Button variant="ghost" size="sm" disabled={isPending} onClick={() => execute("emergencyWithdraw", s.strategyId)}
+                  className="h-7 text-[11px] text-red-600/70 hover:text-red-600 hover:bg-red-500/5 flex-1">
+                  <Stop className="w-3 h-3 mr-1" /> Withdraw
+                </Button>
+              )}
+              {s.status === "Completed" && (
+                <Button variant="ghost" size="sm" disabled={isPending} onClick={() => execute("withdraw", s.strategyId)}
+                  className="h-7 text-[11px] text-[var(--primary)] hover:bg-[var(--primary-light)] flex-1">
+                  <Coins className="w-3 h-3 mr-1" /> Claim
+                </Button>
+              )}
             </div>
           </div>
         );
@@ -497,17 +519,27 @@ type TabKey = (typeof TABS)[number]["key"];
 // Page
 // ────────────────────────────────────────────────
 
-const WALLET = "0x7a3B...f29E";
-
-const STATS = [
-  { label: "Total Invested", value: "$25,000", icon: CurrencyDollar, change: null },
-  { label: "Total PnL", value: "+$4,820", icon: ChartLineUp, change: "+19.3%", positive: true },
-  { label: "Active Agents", value: "2", icon: Robot, change: null },
-  { label: "Fees Paid (x402)", value: "$397.54", icon: Coins, change: null },
-];
-
 export default function DashboardPage() {
   const [tab, setTab] = useState<TabKey>("agents");
+  const { address, isConnected } = useWallet();
+  const { data: strategies = [], isLoading } = useUserStrategies(address || undefined);
+  const { data: vaultStats } = useVaultStats();
+
+  const shortAddr = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not connected";
+
+  // Compute real stats from on-chain data
+  const totalDeposited = strategies.reduce((sum, s) => sum + Number(s.depositAmount), 0);
+  const totalPnl = strategies.reduce((sum, s) => sum + Number(s.pnl), 0);
+  const totalPnlPct = totalDeposited > 0 ? ((totalPnl / totalDeposited) * 100).toFixed(1) : "0";
+  const activeCount = strategies.filter((s) => s.status === "Active" || s.status === "Funded").length;
+  const symbol = strategies[0]?.tokenSymbol || "USDC";
+
+  const STATS = [
+    { label: "Total Deposited", value: `${totalDeposited.toFixed(2)} ${symbol}`, icon: CurrencyDollar, change: null, positive: false },
+    { label: "Total PnL", value: `${totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)} ${symbol}`, icon: totalPnl >= 0 ? ChartLineUp : ChartLineDown, change: `${totalPnl >= 0 ? "+" : ""}${totalPnlPct}%`, positive: totalPnl >= 0 },
+    { label: "Active Strategies", value: `${activeCount}`, icon: Robot, change: null, positive: false },
+    { label: "Fee Rate (x402)", value: `${vaultStats?.feePercent ?? 10}%`, icon: Coins, change: "of profit only", positive: true },
+  ];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -521,7 +553,7 @@ export default function DashboardPage() {
               <h1 className="text-3xl font-bold">My Dashboard</h1>
               <div className="flex items-center gap-2 mt-1.5">
                 <Wallet className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-                <span className="text-[12px] font-mono text-[var(--text-secondary)]">{WALLET}</span>
+                <span className="text-[12px] font-mono text-[var(--text-secondary)]">{shortAddr}</span>
                 <span className="inline-flex items-center px-2 py-0.5 text-[9px] font-semibold rounded border text-[var(--primary)] bg-[var(--primary-light)] border-[var(--primary)]/20">
                   Avalanche Fuji
                 </span>
@@ -578,7 +610,7 @@ export default function DashboardPage() {
 
           {/* Tab content */}
           <div className="animate-slide-up">
-            {tab === "agents" && <MyAgentsTab />}
+            {tab === "agents" && <MyAgentsTab strategies={strategies} />}
             {tab === "positions" && <OpenPositionsTab />}
             {tab === "fees" && <FeeHistoryTab />}
             {tab === "audit" && <AuditLogTab />}
