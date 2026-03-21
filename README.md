@@ -1,108 +1,73 @@
-# Sample GenLayer project
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/license/mit/)
-[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white)](https://discord.gg/8Jm4v89VAu)
-[![Telegram](https://img.shields.io/badge/Telegram--T.svg?style=social&logo=telegram)](https://t.me/genlayer)
-[![Twitter](https://img.shields.io/twitter/url/https/twitter.com/yeagerai.svg?style=social&label=Follow%20%40GenLayer)](https://x.com/GenLayer)
-[![GitHub star chart](https://img.shields.io/github/stars/yeagerai/genlayer-project-boilerplate?style=social)](https://star-history.com/#yeagerai/genlayer-js)
+# Avalon — AI Agents That Trade For You
 
-## 👀 About
-This project includes the boilerplate code for a GenLayer use case implementation, specifically a football bets game.
+> DeFAI platform on Avalanche. Visual strategy builder, autonomous trading agents with ERC-8004 identity, and pay-only-if-you-win fees via x402.
 
-## 📦 What's included
-- Basic requirements to deploy and test your intelligent contracts locally
-- Configuration file template
-<!-- - Test functions to write complete end-to-end tests -->
-- An example of an intelligent contract (Football Bets)
-- Example end-to-end tests for the contract provided
-- A production-ready Next.js 15 frontend with TypeScript, TanStack Query, and Radix UI
+**Live demo:** https://heyavalon.vercel.app
 
-## 🛠️ Requirements
-- A running GenLayer Studio (Install from [Docs](https://docs.genlayer.com/developers/intelligent-contracts/tooling-setup#using-the-genlayer-studio) or work with the hosted version of [GenLayer Studio](https://studio.genlayer.com/)). If you are working locally, this repository code does not need to be located in the same directory as the Genlayer Studio.
-- [GenLayer CLI](https://github.com/genlayerlabs/genlayer-cli) globally installed. To install or update the GenLayer CLI run `npm install -g genlayer`
+Built for [Aleph Hackathon 2026](https://dorahacks.io) — Buenos Aires, March 2026.
 
-## 🚀 Steps to run this example
+---
 
-### 1. Deploy the contract
-   Deploy the contract from `/contracts/football_bets.py` using the GenLayer CLI:
-   1. Choose the network that you want to use (studionet, localnet, or tesnet-*): `genlayer network`
-   2. Execute the deploy command `genlayer deploy`. This command is going to execute the deploy script located in `/deploy/deployScript.ts`
+## Stack
 
-### 2. Setup the frontend environment
-  1. All the content of the dApp is located in the `/frontend` folder.
-  2. Copy the `.env.example` file in the `frontend` folder and rename it to `.env`, then fill in the values for your configuration. The provided NEXT_PUBLIC_GENLAYER_RPC_URL value is the backend of the hosted GenLayer Studio.
-  3. Add the deployed contract address to the `/frontend/.env` under the variable `NEXT_PUBLIC_CONTRACT_ADDRESS`
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 16, React 19, TypeScript, Tailwind v4, shadcn/ui |
+| Icons | Phosphor Icons |
+| Fonts | Sora + IBM Plex Mono |
+| Blockchain | Avalanche C-Chain (Fuji testnet) |
+| DEX | Trader Joe Liquidity Book (SDK v2) |
+| Oracles | Chainlink price feeds (AVAX/USD, ETH/USD, BTC/USD) |
+| Agent Identity | ERC-8004 Identity + Reputation Registries |
+| Payments | x402 protocol (success fee) |
+| AI Engine | GenLayer |
 
-### 4. Run the frontend Next.js app
-   Execute the following commands in your terminal:
+## Pages
 
-   **Using bun:**
-   ```shell
-   cd frontend
-   bun install
-   bun dev
-   ```
+- `/` — Landing page
+- `/marketplace` — Browse agents with on-chain reputation
+- `/agents/[tokenId]` — Agent profile with performance chart, trade history, hire CTA
+- `/builder` — Visual strategy builder (drag & drop with React Flow)
+- `/dashboard` — Portfolio, positions, fee history, audit log
 
-   **Using npm:**
-   ```shell
-   cd frontend
-   npm install
-   npm run dev
-   ```
+## Getting Started
 
-   The terminal should display a link to access your frontend app (usually at <http://localhost:3000/>).
-   For more information on the code see [GenLayerJS](https://github.com/yeagerai/genlayer-js).
-   
-### 5. Test contracts
-1. Install the Python packages listed in the `requirements.txt` file in a virtual environment.
-2. Make sure your GenLayer Studio is running. Then execute the following command in your terminal:
-   ```shell
-   gltest
-   ```
+```bash
+# Install dependencies
+npm install
 
-## ⚽ How the Football Bets Contract Works
+# Copy env and fill in values
+cp frontend/.env.example frontend/.env
 
-The Football Bets contract allows users to create bets for football matches, resolve those bets, and earn points for correct bets. Here's a breakdown of its main functionalities:
+# Run dev server
+npm run dev
+```
 
-1. Creating Bets:
-   - Users can create a bet for a specific football match by providing the game date, team names, and their predicted winner.
-   - The contract checks if the game has already finished and if the user has already made a bet for this match.
+Open http://localhost:3000.
 
-2. Resolving Bets:
-   - After a match has concluded, users can resolve their bets.
-   - The contract fetches the actual match result from a specified URL.
-   - If the Bet was correct, the user earns a point.
+## Environment Variables
 
-3. Querying Data:
-   - Users can retrieve all bets.
-   - The contract also allows querying of points, either for all players or for a specific player.
+```
+NEXT_PUBLIC_WC_PROJECT_ID=        # WalletConnect (cloud.walletconnect.com)
+NEXT_PUBLIC_CONTRACT_ADDRESS=     # Deployed contract address
+NEXT_PUBLIC_GENLAYER_RPC_URL=     # GenLayer RPC
+```
 
-4. Getting Points:
-   - Points are awarded for correct bets.
-   - Users can check their total points or the points of any player.
+## Key Contracts (Fuji)
 
-## 🧪 Tests
+| Contract | Address |
+|----------|---------|
+| ERC-8004 Identity Registry | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
+| ERC-8004 Reputation Registry | `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63` |
+| Chainlink AVAX/USD | `0x5498BB86BC934c8D34FDA08E81D444153d0D06aD` |
+| Trader Joe LB Router | `0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30` |
+| USDC | `0x5425890298aed601595a70AB815c96711a31Bc65` |
+| WAVAX | `0xd00ae08403B9bbb9124bB305C09058E32C39A48c` |
 
-This project includes integration tests that interact with the contract deployed in the Studio. These tests cover the main functionalities of the Football Bets contract:
+## Team
 
-1. Creating a bet
-2. Resolving a bet
-3. Querying bets for a player
-4. Querying points for a player
+BuenDia Builders — Aleph Hackathon 2026
 
-The tests simulate real-world interactions with the contract, ensuring that it behaves correctly under various scenarios. They use the GenLayer Studio to deploy and interact with the contract, providing a comprehensive check of the contract's functionality in a controlled environment.
+## License
 
-To run the tests, use the `gltest` command as mentioned in the "Steps to run this example" section.
-
-
-## 💬 Community
-Connect with the GenLayer community to discuss, collaborate, and share insights:
-- **[Discord Channel](https://discord.gg/8Jm4v89VAu)**: Our primary hub for discussions, support, and announcements.
-- **[Telegram Group](https://t.me/genlayer)**: For more informal chats and quick updates.
-
-Your continuous feedback drives better product development. Please engage with us regularly to test, discuss, and improve GenLayer.
-
-## 📖 Documentation
-For detailed information on how to use GenLayerJS SDK, please refer to our [documentation](https://docs.genlayer.com/).
-
-## 📜 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT
