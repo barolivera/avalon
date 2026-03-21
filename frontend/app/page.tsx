@@ -123,8 +123,9 @@ export default function HomePage() {
               Live on Avalanche
             </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-[var(--text-primary)]">
-              Avalon — AI Agents
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-6 text-[var(--text-primary)]">
+              <span className="block sm:inline">Avalon —</span>{" "}
+              <span className="block sm:inline">AI Agents</span>
               <br />
               <span className="bg-gradient-to-r from-[var(--primary)] to-[var(--primary-hover)] bg-clip-text text-transparent">
                 That Trade For You
