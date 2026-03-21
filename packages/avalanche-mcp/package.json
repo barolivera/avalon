@@ -1,0 +1,19 @@
+{
+  "name": "@avalon/avalanche-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Avalanche C-Chain: balances, swaps, ERC-8004 agents, Chainlink feeds, x402 payments",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "avalanche-mcp": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "ethers": "^6.13.0",
+    "@traderjoe-xyz/sdk-v2": "^3.0.30"
+  }
+}

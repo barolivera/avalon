@@ -108,6 +108,21 @@ export const ABIS = {
   ] as const,
 } as const;
 
+// ── Avalon Contracts (deployed UUPS proxies) ──
+
+export const AVALON_CONTRACTS = {
+  fuji: {
+    strategyVault: "0x5C126932a5394Ca843608d38FfeB8A2AF9DBbBF3" as `0x${string}`,
+    strategyExecutor: "0x84a2408A7d7966A55ae6D28dc956AA52a6c28D6C" as `0x${string}`,
+    feeCollector: "0x04DAF41Fe41E2c25De5Dc9901024c89Fe9773053" as `0x${string}`,
+  },
+  mainnet: {
+    strategyVault: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+    strategyExecutor: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+    feeCollector: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+  },
+} as const;
+
 // ── Helpers ──
 
 export function getExplorerTxUrl(txHash: string, network: NetworkId = "fuji"): string {

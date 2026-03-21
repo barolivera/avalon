@@ -2,124 +2,77 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project: Avalon
+
+Avalon is a DeFAI retail-first platform on Avalanche where AI agents with on-chain identity (ERC-8004) execute trading strategies on Trader Joe Liquidity Book, charge performance fees via x402, and the user maintains full control with transparency.
+
 ## Quick Commands
 
 ```bash
-npm run deploy          # Deploy contracts via GenLayer CLI
-npm run dev             # Start frontend dev server (cd frontend && npm run dev)
-npm run build           # Build frontend for production
-gltest                  # Run contract tests (requires GenLayer Studio running)
-genlayer network        # Select network (studionet/localnet/testnet)
+cd frontend && npm run dev       # Start frontend dev server
+cd frontend && npm run build     # Build frontend for production
 ```
 
 ## Architecture
 
 ```
-contracts/          # Python intelligent contracts
-frontend/           # Next.js 15 app (TypeScript, TanStack Query, Radix UI)
+frontend/           # Next.js 16 app (TypeScript, TanStack Query, shadcn/ui, wagmi/viem)
+docs/               # Architecture docs, agent personas, skills
+packages/           # MCP server for Avalanche
 deploy/             # TypeScript deployment scripts
-test/               # Python integration tests (gltest)
 ```
 
-**Frontend stack**: Next.js 15, React 19, TypeScript, Tailwind CSS, TanStack Query, Wagmi/Viem, MetaMask wallet integration.
+**Frontend stack**: Next.js 16, React 19, TypeScript, Tailwind CSS, TanStack Query, Zustand, Wagmi v2 + Viem, shadcn/ui, RainbowKit.
 
-## Development Workflow
+## Smart Contracts (Deployed on Avalanche Fuji)
 
-1. Ensure GenLayer Studio is running (local or https://studio.genlayer.com)
-2. Select network: `genlayer network`
-3. Deploy contract: `npm run deploy`
-4. Copy deployed address to `frontend/.env` as `NEXT_PUBLIC_CONTRACT_ADDRESS`
-5. Run frontend: `cd frontend && bun dev`
+Contracts live in a separate repo (mariaelisaaraya/avalon) and are already deployed:
 
-## Contract Development
+| Contract | Proxy Address |
+|----------|--------------|
+| StrategyVault | `0x5C126932a5394Ca843608d38FfeB8A2AF9DBbBF3` |
+| StrategyExecutor | `0x84a2408A7d7966A55ae6D28dc956AA52a6c28D6C` |
+| FeeCollector | `0x04DAF41Fe41E2c25De5Dc9901024c89Fe9773053` |
 
-Contracts are Python files in `/contracts/` using the GenLayer SDK:
+**External contracts (Avalanche Fuji):**
+- ERC-8004 Identity Registry: `0x8004A818BFB912233c491871b3d84c89A494BD9e`
+- ERC-8004 Reputation Registry: `0x8004B663056A597Dffe9eCcC1965A193B7388713`
+- Trader Joe LB Router: `0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30`
+- USDC: `0x5425890298aed601595a70AB815c96711a31Bc65`
+- WAVAX: `0xd00ae08403B9bbb9124bB305C09058E32C39A48c`
+- Chainlink AVAX/USD: `0x5498BB86BC934c8D34FDA08E81D444153d0D06aD`
 
-```python
-from genlayer import *
+**Owner/Admin:** `0xfE0C41602CAcb28217e1eAfa4C987C78Db78AAFD`
 
-class MyContract(gl.Contract):
-    data: TreeMap[Address, str]  # Storage declaration
+## Frontend Pages
 
-    def __init__(self):
-        self.data = TreeMap()
-
-    @gl.public.view
-    def get_data(self, addr: Address) -> str:
-        return self.data.get(addr, "")
-
-    @gl.public.write
-    def set_data(self, value: str):
-        self.data[gl.message.sender_address] = value
-```
-
-**Decorators**:
-- `@gl.public.view` - Read-only methods
-- `@gl.public.write` - State-modifying methods
-- `@gl.public.write.payable` - Methods accepting value
-
-**Storage types**: `TreeMap`, `DynArray`, `Array`, `@allow_storage` for custom classes
+| Page | Purpose |
+|------|---------|
+| `/marketplace` | Agent marketplace — browse ERC-8004 registered agents by reputation |
+| `/dashboard` | Portfolio overview, active strategies, P&L, alerts |
+| `/builder` | Visual Strategy Builder: type selection, config, AI suggestions, preview |
+| `/agents/[tokenId]` | Agent detail: reputation, trades, performance |
 
 ## Frontend Patterns
 
-- Contract interactions: `frontend/lib/contracts/FootballBets.ts`
-- React hooks: `frontend/lib/hooks/useFootballBets.ts`
-- Wallet context: `frontend/lib/genlayer/WalletProvider.tsx`
-- GenLayer client: `frontend/lib/genlayer/client.ts`
+- Contract config: `frontend/lib/contracts/avalanche-config.ts`
+- Avalanche client: `frontend/lib/contracts/avalanche-client.ts`
+- Contract types: `frontend/lib/contracts/types.ts`
+- Hooks: `frontend/lib/hooks/useAgents.ts`, `useChainlinkPrice.ts`, `useX402.ts`
+- Wallet: wagmi/viem + RainbowKit
 
----
+## Key Concepts
 
-## GenLayer Technical Reference
+- **User = Pilot**: controls, pauses, withdraws. Full custody at all times.
+- **AI = Copilot**: optimizes parameters, executes trades, logs every decision on-chain.
+- **ERC-8004**: On-chain agent identity + reputation. Agents have verifiable track records.
+- **x402**: Success fee — only charges if the strategy is profitable (10% of profit).
+- **Trader Joe Liquidity Book**: DEX for on-chain trade execution.
+- **Chainlink**: Price feeds for agent decision-making.
 
-> **Can't solve an issue?** Always check the complete SDK API reference:
-> **https://sdk.genlayer.com/main/_static/ai/api.txt**
->
-> Contains: all classes, methods, parameters, return types, changelogs, breaking changes.
+## Resources
 
-### Documentation URLs
-
-| Resource | URL |
-|----------|-----|
-| **SDK API (Complete)** | https://sdk.genlayer.com/main/_static/ai/api.txt |
-| Full Documentation | https://docs.genlayer.com/full-documentation.txt |
-| Main Docs | https://docs.genlayer.com/ |
-| GenLayerJS SDK | https://docs.genlayer.com/api-references/genlayer-js |
-
-### What is GenLayer?
-
-GenLayer is an AI-native blockchain where smart contracts can natively access the internet and make decisions using AI (LLMs). Contracts are Python-based and executed in the GenVM.
-
-### Web Access (`gl.nondet.web`)
-
-```python
-gl.nondet.web.get(url: str, *, headers: dict = {}) -> Response
-gl.nondet.web.post(url: str, *, body: str | bytes | None = None, headers: dict = {}) -> Response
-gl.nondet.web.render(url: str, *, mode: Literal['text', 'html']) -> str
-gl.nondet.web.render(url: str, *, mode: Literal['screenshot']) -> Image
-```
-
-### LLM Access (`gl.nondet`)
-
-```python
-gl.nondet.exec_prompt(prompt: str, *, images: Sequence[bytes | Image] | None = None) -> str
-gl.nondet.exec_prompt(prompt: str, *, response_format: Literal['json'], image: bytes | Image | None = None) -> dict
-```
-
-### Equivalence Principle
-
-Validation for non-deterministic outputs:
-
-| Type | Use Case | Function |
-|------|----------|----------|
-| Strict | Exact outputs | `gl.eq_principle.strict_eq()` |
-| Comparative | Similar outputs | `gl.eq_principle.prompt_comparative()` |
-| Non-Comparative | Subjective assessments | `gl.eq_principle.prompt_non_comparative()` |
-
-### Key Documentation Links
-
-- [Introduction to Intelligent Contracts](https://docs.genlayer.com/developers/intelligent-contracts/introduction)
-- [Storage](https://docs.genlayer.com/developers/intelligent-contracts/storage)
-- [Deploying Contracts](https://docs.genlayer.com/developers/intelligent-contracts/deploying)
-- [Crafting Prompts](https://docs.genlayer.com/developers/intelligent-contracts/crafting-prompts)
-- [Contract Examples](https://docs.genlayer.com/developers/intelligent-contracts/examples/storage)
-- [Testing Contracts](https://docs.genlayer.com/developers/decentralized-applications/testing)
+- Full architecture: `docs/avalon-architecture.md`
+- Agent personas: `docs/agents/`
+- Skills: `docs/skills/`
+- MCP server: `packages/avalanche-mcp/`
