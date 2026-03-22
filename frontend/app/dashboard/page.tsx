@@ -230,6 +230,103 @@ function TxLink({ hash }: { hash: string }) {
 // Tab components
 // ────────────────────────────────────────────────
 
+function MockAgentsGrid() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {AGENTS.filter((a) => a.status !== "stopped").map((agent) => {
+        const pnlPositive = agent.pnl >= 0;
+        const pnl24Positive = agent.pnl24h >= 0;
+        const sc = statusConfig[agent.status];
+        return (
+          <div key={agent.id} className="rounded-xl border border-[var(--border-light)] bg-[var(--surface)] overflow-hidden">
+            <div className="p-4 space-y-4">
+              {/* Header */}
+              <div className="flex items-start gap-3">
+                <AgentAvatar hue={agent.hue} name={agent.name} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-[13px] font-semibold truncate">{agent.name}</h3>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-semibold rounded border ${sc.class}`}>
+                      {sc.label}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{agent.strategy}</p>
+                </div>
+              </div>
+
+              {/* Sparkline */}
+              <div className="h-12">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={agent.sparkline}>
+                    <YAxis domain={["dataMin", "dataMax"]} hide />
+                    <Line
+                      type="monotone"
+                      dataKey="v"
+                      stroke={pnl24Positive ? "#10B981" : "#EF4444"}
+                      strokeWidth={1.5}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-4 gap-2">
+                <div>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Total PnL</p>
+                  <span className={`text-sm font-semibold tabular-nums font-mono ${pnlPositive ? "text-green-600" : "text-red-600"}`}>
+                    {pnlPositive ? "+" : ""}{agent.pnl}%
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">24h</p>
+                  <span className={`text-sm font-semibold tabular-nums font-mono ${pnl24Positive ? "text-green-600" : "text-red-600"}`}>
+                    {pnl24Positive ? "+" : ""}{agent.pnl24h}%
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Win Rate</p>
+                  <span className="text-sm font-semibold tabular-nums font-mono">{agent.winRate}%</span>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[var(--text-tertiary)]">Invested</p>
+                  <span className="text-sm font-semibold tabular-nums font-mono">${agent.invested.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-4 py-3 border-t border-[var(--border-lighter)] flex items-center gap-2">
+              {agent.status === "active" && (
+                <Button variant="ghost" size="sm"
+                  className="h-7 text-[11px] text-yellow-400/70 hover:text-yellow-400 hover:bg-yellow-500/5 flex-1">
+                  <Pause className="w-3 h-3 mr-1" /> Pause
+                </Button>
+              )}
+              {agent.status === "paused" && (
+                <Button variant="ghost" size="sm"
+                  className="h-7 text-[11px] text-green-600/70 hover:text-green-600 hover:bg-green-500/5 flex-1">
+                  <ChartLineUp className="w-3 h-3 mr-1" /> Resume
+                </Button>
+              )}
+              <Button variant="ghost" size="sm"
+                className="h-7 text-[11px] text-red-600/70 hover:text-red-600 hover:bg-red-500/5 flex-1">
+                <Stop className="w-3 h-3 mr-1" /> Stop
+              </Button>
+              <a href={`/agents/${agent.id}`}>
+                <Button variant="ghost" size="sm"
+                  className="h-7 text-[11px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
+                  <Eye className="w-3 h-3 mr-1" /> Details
+                </Button>
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MyAgentsTab({ strategies }: { strategies: StrategyView[] }) {
   const { execute, isPending } = useStrategyAction();
 
@@ -242,17 +339,9 @@ function MyAgentsTab({ strategies }: { strategies: StrategyView[] }) {
     Draft:     { label: "DRAFT",     class: "text-gray-500 bg-gray-50 border-gray-200" },
   };
 
+  // Show mock agents as fallback when no on-chain strategies exist
   if (strategies.length === 0) {
-    return (
-      <div className="text-center py-16">
-        <Robot className="w-12 h-12 mx-auto mb-4 text-[var(--text-tertiary)]" />
-        <h3 className="text-lg font-semibold mb-2">No strategies yet</h3>
-        <p className="text-[13px] text-[var(--text-secondary)] mb-4">Go to the Builder to create your first strategy</p>
-        <a href="/builder">
-          <Button variant="default" size="sm">Create Strategy</Button>
-        </a>
-      </div>
-    );
+    return <MockAgentsGrid />;
   }
 
   return (
