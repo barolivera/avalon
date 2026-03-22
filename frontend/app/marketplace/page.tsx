@@ -56,27 +56,26 @@ function riskBadge(risk: RiskLevel) {
   }
 }
 
-// --- Generative avatar ---
+// --- Generative avatar with initials ---
 
-function AgentAvatar({ hue, name }: { hue: number; name: string }) {
-  const seed = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const cells = Array.from({ length: 9 }, (_, i) => (seed * (i + 7)) % 3 !== 0);
+function AgentAvatar({ name }: { hue?: number; name: string }) {
+  const initials = name
+    .split(/[\s-]+/)
+    .filter((w) => w[0] && w[0] === w[0].toUpperCase())
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("");
+
+  // Deterministic hue from name hash
+  const hash = name.split("").reduce((acc, c) => acc + c.charCodeAt(0) * 31, 0);
+  const hue = hash % 360;
 
   return (
     <div
-      className="w-12 h-12 rounded-xl grid grid-cols-3 gap-px p-1.5 shrink-0"
-      style={{ background: `hsl(${hue} 30% 95%)`, border: `1px solid hsl(${hue} 30% 88%)` }}
+      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm select-none"
+      style={{ background: `hsl(${hue} 65% 50%)` }}
     >
-      {cells.map((on, i) => (
-        <div
-          key={i}
-          className="rounded-sm"
-          style={{
-            background: on ? `hsl(${hue} 60% 55%)` : `hsl(${hue} 20% 92%)`,
-            opacity: on ? 1 : 0.5,
-          }}
-        />
-      ))}
+      {initials}
     </div>
   );
 }

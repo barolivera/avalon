@@ -110,33 +110,23 @@ const STRATEGY_NODES = [
 
 // ── Avatar ──
 
-function AgentAvatar({ hue, name, size = 64 }: { hue: number; name: string; size?: number }) {
-  const seed = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-  const cells = Array.from({ length: 9 }, (_, i) => (seed * (i + 7)) % 3 !== 0);
-  const px = size * 0.12;
+function AgentAvatar({ name, size = 64 }: { hue?: number; name: string; size?: number }) {
+  const initials = name
+    .split(/[\s-]+/)
+    .filter((w) => w[0] && w[0] === w[0].toUpperCase())
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("");
+  const hash = name.split("").reduce((acc, c) => acc + c.charCodeAt(0) * 31, 0);
+  const hue = hash % 360;
+  const fontSize = Math.round(size * 0.35);
 
   return (
     <div
-      className="rounded-2xl grid grid-cols-3 shrink-0"
-      style={{
-        width: size,
-        height: size,
-        padding: px,
-        gap: 2,
-        background: `hsl(${hue} 30% 95%)`,
-        border: `1px solid hsl(${hue} 30% 88%)`,
-      }}
+      className="rounded-2xl flex items-center justify-center shrink-0 text-white font-bold select-none"
+      style={{ width: size, height: size, fontSize, background: `hsl(${hue} 65% 50%)` }}
     >
-      {cells.map((on, i) => (
-        <div
-          key={i}
-          className="rounded-sm"
-          style={{
-            background: on ? `hsl(${hue} 60% 55%)` : `hsl(${hue} 20% 92%)`,
-            opacity: on ? 1 : 0.5,
-          }}
-        />
-      ))}
+      {initials}
     </div>
   );
 }
