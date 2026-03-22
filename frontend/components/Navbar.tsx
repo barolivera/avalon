@@ -71,8 +71,9 @@ export function Navbar() {
             <div className="flex items-center gap-2 sm:gap-3">
               {avaxPrice && (
                 <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border-light)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-live-dot" />
                   <span className="text-[11px] text-[var(--text-secondary)]">AVAX</span>
-                  <span className="text-[11px] font-semibold font-mono text-[var(--text-primary)]">
+                  <span className="text-[11px] font-semibold font-mono text-[var(--text-primary)] animate-price-flash">
                     ${avaxPrice.price.toFixed(2)}
                   </span>
                 </div>

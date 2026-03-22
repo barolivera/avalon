@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { useAgents, type Agent } from "@/lib/hooks/useAgents";
+import { useCountUp } from "@/lib/hooks/useCountUp";
 import {
   Robot,
   ChartLineUp,
@@ -88,16 +89,30 @@ function ReputationBar({ score }: { score: number }) {
     score >= 75 ? "from-yellow-500 to-amber-400" :
     "from-red-500 to-orange-400";
 
+  const animated = useCountUp(score, 1000, 300);
+
   return (
     <div className="flex items-center gap-2 w-full">
       <div className="flex-1 h-1.5 rounded-full bg-[var(--border-lighter)] overflow-hidden">
         <div
-          className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-500`}
-          style={{ width: `${score}%` }}
+          className={`h-full rounded-full bg-gradient-to-r ${barColor}`}
+          style={{ width: `${animated}%`, transition: "width 50ms linear" }}
         />
       </div>
-      <span className="text-xs font-medium tabular-nums font-mono w-8 text-right text-[var(--text-primary)]">{score}</span>
+      <span className="text-xs font-medium tabular-nums font-mono w-8 text-right text-[var(--text-primary)]">{Math.round(animated)}</span>
     </div>
+  );
+}
+
+// --- Animated PnL number ---
+
+function AnimatedPnl({ value, suffix = "%" }: { value: number; suffix?: string }) {
+  const animated = useCountUp(Math.abs(value), 1200, 200);
+  const positive = value >= 0;
+  return (
+    <span className={`text-sm font-semibold tabular-nums font-mono ${positive ? "text-green-600" : "text-red-600"}`}>
+      {positive ? "+" : "-"}{animated.toFixed(1)}{suffix}
+    </span>
   );
 }
 
@@ -166,9 +181,7 @@ function AgentCard({ agent }: { agent: Agent }) {
               ) : (
                 <ChartLineDown className="w-3 h-3 text-red-500" />
               )}
-              <span className={`text-sm font-semibold tabular-nums font-mono ${pnlPositive ? "text-green-600" : "text-red-600"}`}>
-                {pnlPositive ? "+" : ""}{agent.pnl}%
-              </span>
+              <AnimatedPnl value={agent.pnl} />
             </div>
           </div>
           <div>

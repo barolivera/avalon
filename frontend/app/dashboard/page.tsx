@@ -7,6 +7,7 @@ import { useUserStrategies, useVaultStats, type StrategyView } from "@/lib/hooks
 import { useStrategyAction } from "@/lib/hooks/useStrategyActions";
 import { useWallet } from "@/lib/genlayer/WalletProvider";
 import { getExplorerAddressUrl } from "@/lib/contracts/avalanche-config";
+import { useCountUp } from "@/lib/hooks/useCountUp";
 import {
   LineChart,
   Line,
@@ -230,6 +231,16 @@ function TxLink({ hash }: { hash: string }) {
 // Tab components
 // ────────────────────────────────────────────────
 
+function AnimatedPnl({ value, suffix = "%" }: { value: number; suffix?: string }) {
+  const animated = useCountUp(Math.abs(value), 1200, 200);
+  const positive = value >= 0;
+  return (
+    <span className={`text-sm font-semibold tabular-nums font-mono ${positive ? "text-green-600" : "text-red-600"}`}>
+      {positive ? "+" : "-"}{animated.toFixed(1)}{suffix}
+    </span>
+  );
+}
+
 function MockAgentsGrid() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -274,15 +285,11 @@ function MockAgentsGrid() {
               <div className="grid grid-cols-4 gap-2">
                 <div>
                   <p className="text-[10px] text-[var(--text-tertiary)]">Total PnL</p>
-                  <span className={`text-sm font-semibold tabular-nums font-mono ${pnlPositive ? "text-green-600" : "text-red-600"}`}>
-                    {pnlPositive ? "+" : ""}{agent.pnl}%
-                  </span>
+                  <AnimatedPnl value={agent.pnl} />
                 </div>
                 <div>
                   <p className="text-[10px] text-[var(--text-tertiary)]">24h</p>
-                  <span className={`text-sm font-semibold tabular-nums font-mono ${pnl24Positive ? "text-green-600" : "text-red-600"}`}>
-                    {pnl24Positive ? "+" : ""}{agent.pnl24h}%
-                  </span>
+                  <AnimatedPnl value={agent.pnl24h} />
                 </div>
                 <div>
                   <p className="text-[10px] text-[var(--text-tertiary)]">Win Rate</p>
