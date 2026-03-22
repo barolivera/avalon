@@ -253,7 +253,7 @@ function MockAgentsGrid() {
         const pnl24Positive = agent.pnl24h >= 0;
         const sc = statusConfig[agent.status];
         return (
-          <div key={agent.id} className="rounded-xl border border-[var(--border-light)] bg-[var(--surface)] overflow-hidden">
+          <div key={agent.id} className="rounded-xl border border-[var(--border-light)] bg-[var(--surface)] overflow-hidden hover:shadow-[0_8px_24px_rgba(131,115,255,0.12)] hover:border-[var(--primary)]/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
             <div className="p-4 space-y-4">
               {/* Header */}
               <div className="flex items-start gap-3">
@@ -362,7 +362,7 @@ function MyAgentsTab({ strategies }: { strategies: StrategyView[] }) {
         const sc = strategyStatusConfig[s.status] || strategyStatusConfig.Draft;
         const hue = (s.agentId * 47) % 360;
         return (
-          <div key={s.strategyId} className="rounded-xl border border-[var(--border-light)] bg-[var(--surface)] overflow-hidden">
+          <div key={s.strategyId} className="rounded-xl border border-[var(--border-light)] bg-[var(--surface)] overflow-hidden hover:shadow-[0_8px_24px_rgba(131,115,255,0.12)] hover:border-[var(--primary)]/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer">
             <div className="p-4 space-y-4">
               <div className="flex items-start gap-3">
                 <AgentAvatar hue={hue} name={`Agent #${s.agentId}`} />

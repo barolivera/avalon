@@ -92,10 +92,7 @@ function AgentAvatar({ name }: { hue?: number; name: string }) {
 // --- Reputation bar ---
 
 function ReputationBar({ score }: { score: number }) {
-  const barColor =
-    score >= 90 ? "from-[#8373FF] to-[#6E5FE8]" :
-    score >= 75 ? "from-yellow-500 to-amber-400" :
-    "from-red-500 to-orange-400";
+  const barColor = "from-[#8373FF] to-[#6E5FE8]";
 
   const animated = useCountUp(score, 1000, 300);
 
@@ -130,7 +127,7 @@ function AgentCard({ agent }: { agent: Agent }) {
   const pnlPositive = agent.pnl >= 0;
 
   return (
-    <div className="group relative flex flex-col rounded-xl border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-card-hover)] hover:border-[var(--primary)]/30 transition-all duration-300 overflow-hidden">
+    <div className="group relative flex flex-col rounded-xl border border-[var(--border-light)] bg-[var(--surface)] shadow-[var(--shadow-card)] hover:shadow-[0_8px_24px_rgba(131,115,255,0.12)] hover:border-[var(--primary)]/30 hover:-translate-y-0.5 transition-all duration-200 overflow-hidden cursor-pointer">
       <div className="p-5 flex flex-col gap-4 flex-1">
         {/* Header: avatar + name + badges */}
         <div className="flex items-start gap-3">
@@ -257,7 +254,7 @@ export default function MarketplacePage() {
                 className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                   activeFilter === key
                     ? "bg-[var(--primary-light)] text-[var(--primary)] border border-[var(--primary)]/20"
-                    : "bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border-light)] hover:border-[var(--text-tertiary)] hover:text-[var(--text-primary)] shadow-[var(--shadow-card)]"
+                    : "bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border-light)] hover:bg-[var(--primary-light)] hover:border-[var(--primary)] hover:text-[var(--primary)] shadow-[var(--shadow-card)] transition-all duration-150"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
