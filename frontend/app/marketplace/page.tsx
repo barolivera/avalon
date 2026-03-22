@@ -56,26 +56,35 @@ function riskBadge(risk: RiskLevel) {
   }
 }
 
-// --- Generative avatar with initials ---
+// --- Generative grid avatar ---
 
 function AgentAvatar({ name }: { hue?: number; name: string }) {
-  const initials = name
-    .split(/[\s-]+/)
-    .filter((w) => w[0] && w[0] === w[0].toUpperCase())
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("");
-
-  // Deterministic hue from name hash
+  // Deterministic hue from name — multiply by 31 then offset to avoid
+  // clustering near 0 (red-grey) which looks washed out
   const hash = name.split("").reduce((acc, c) => acc + c.charCodeAt(0) * 31, 0);
-  const hue = hash % 360;
+  const h = (hash * 137 + 60) % 360; // golden-angle spread, skip low-hue zone
+
+  // Generate 9 cells with guaranteed 4-6 "on" cells so the pattern is always visible
+  const cells = Array.from({ length: 9 }, (_, i) => {
+    const v = (hash * (i * 7 + 13) + i * 53) % 100;
+    return v < 55; // ~55% fill rate
+  });
 
   return (
     <div
-      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-white font-bold text-sm select-none"
-      style={{ background: `hsl(${hue} 65% 50%)` }}
+      className="w-12 h-12 rounded-xl grid grid-cols-3 gap-px p-1.5 shrink-0"
+      style={{ background: `hsl(${h} 40% 94%)`, border: `1px solid hsl(${h} 35% 86%)` }}
     >
-      {initials}
+      {cells.map((on, i) => (
+        <div
+          key={i}
+          className="rounded-sm"
+          style={{
+            background: on ? `hsl(${h} 65% 52%)` : `hsl(${h} 20% 90%)`,
+            opacity: on ? 1 : 0.4,
+          }}
+        />
+      ))}
     </div>
   );
 }

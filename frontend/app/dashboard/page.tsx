@@ -190,22 +190,29 @@ const auditIcons: Record<AuditAction, { icon: typeof ArrowsClockwise; class: str
   pause:        { icon: Pause,           class: "text-yellow-600 bg-yellow-50" },
 };
 
-// Generative avatar with initials (same as marketplace)
+// Generative grid avatar (same as marketplace)
 function AgentAvatar({ name }: { hue?: number; name: string }) {
-  const initials = name
-    .split(/[\s-]+/)
-    .filter((w) => w[0] && w[0] === w[0].toUpperCase())
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("");
   const hash = name.split("").reduce((acc, c) => acc + c.charCodeAt(0) * 31, 0);
-  const hue = hash % 360;
+  const h = (hash * 137 + 60) % 360;
+  const cells = Array.from({ length: 9 }, (_, i) => {
+    const v = (hash * (i * 7 + 13) + i * 53) % 100;
+    return v < 55;
+  });
   return (
     <div
-      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 text-white font-bold text-xs select-none"
-      style={{ background: `hsl(${hue} 65% 50%)` }}
+      className="w-10 h-10 rounded-lg grid grid-cols-3 gap-px p-1.5 shrink-0"
+      style={{ background: `hsl(${h} 40% 94%)`, border: `1px solid hsl(${h} 35% 86%)` }}
     >
-      {initials}
+      {cells.map((on, i) => (
+        <div
+          key={i}
+          className="rounded-sm"
+          style={{
+            background: on ? `hsl(${h} 65% 52%)` : `hsl(${h} 20% 90%)`,
+            opacity: on ? 1 : 0.4,
+          }}
+        />
+      ))}
     </div>
   );
 }
